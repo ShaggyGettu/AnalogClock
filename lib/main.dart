@@ -30,7 +30,10 @@ class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
   Future<void> _incrementCounter() async {
-    DateTime dateTime = await AnalogClock.showAnalogClock(context);
+    DateTime dateTime;
+    dateTime = await AnalogClock.showAnalogClock(context: context);
+    TimeOfDay time;
+    // time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
     setState(() {
       _counter++;
     });
