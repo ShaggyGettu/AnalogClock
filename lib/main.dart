@@ -34,7 +34,9 @@ class _MyHomePageState extends State<MyHomePage> {
     dateTime = await AnalogClock.showAnalogClock(
       context: context,
       dateTime: DateTime.now().subtract(Duration(days: 3)),
+      hour12MinuteSecond: true,
     );
+    print(dateTime);
     // TimeOfDay time;
     // time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
     setState(() {
