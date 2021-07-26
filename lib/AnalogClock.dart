@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart' as intl;
 
 class AnalogClock extends StatefulWidget {
-  final double height = 180;
-  final double width = 180;
+  final double radius = 180;
+  final double width;
+  final double height;
   final ClockType clockType;
   final Function changeHour;
+  final Function changeMinute;
   final TimeOfDay timeOfDay;
+  static const double _minimumDialogWidth = 200;
+  static const double _minimumDialogHeight = 408;
 
   const AnalogClock({
     Key key,
     this.clockType = ClockType.Hours12,
+    this.width,
+    this.height,
     this.changeHour,
+    this.changeMinute,
     this.timeOfDay,
   }) : super(key: key);
   @override
@@ -27,16 +33,14 @@ class AnalogClock extends StatefulWidget {
     int amountDots,
     bool isHour12,
   ) {
-    double sectionSize =
-        (size.width - amountDots * 50 - (isHour12 ? 100 : 0)) / amountSections;
-    print(sectionSize);
+    double sectionSize = 55;
     return Visibility(
       child: TextButton(
         onPressed: () => onPressed(),
         child: Text(
           data,
           style: TextStyle(
-            fontSize: 20,
+            fontSize: 24,
             color: colorType ? Colors.blue[500] : Colors.black,
           ),
         ),
@@ -56,7 +60,7 @@ class AnalogClock extends StatefulWidget {
     return Visibility(
       visible: isMinute,
       child: Text(
-        ':',
+        ' : ',
         style: TextStyle(
           fontFamily: 'bold',
           fontSize: 24,
@@ -68,6 +72,8 @@ class AnalogClock extends StatefulWidget {
   static Future<DateTime> showAnalogClock({
     @required BuildContext context,
     DateTime dateTime,
+    double screenWidth = 200,
+    double screenHeight = 450,
     bool hour12 = false,
     bool hour24 = false,
     bool hour12Minute = false,
@@ -78,6 +84,17 @@ class AnalogClock extends StatefulWidget {
     bool minuteSecond = false,
     bool second = false,
   }) async {
+    if (dateTime == null) dateTime = DateTime.now();
+    ClockType clockType = (hour12 || hour12Minute || hour12MinuteSecond)
+        ? ClockType.Hours12
+        : null;
+    clockType = clockType ??
+        ((hour24 || hour24Minute || hour24MinuteSecond)
+            ? ClockType.Hours24
+            : null);
+    clockType =
+        clockType ?? ((minute || minuteSecond) ? ClockType.Minutes : null);
+    clockType = clockType ?? (second ? ClockType.Seconds : null);
     assert(hour12 ||
         hour12Minute ||
         hour12MinuteSecond ||
@@ -87,20 +104,6 @@ class AnalogClock extends StatefulWidget {
         minute ||
         minuteSecond ||
         second);
-    if (dateTime == null) dateTime = DateTime.now();
-    ClockType clockType = (hour12 || hour12Minute || hour12MinuteSecond)
-        ? ClockType.Hours12
-        : null;
-    clockType = clockType == null
-        ? (hour24 || hour24Minute || hour24MinuteSecond)
-            ? ClockType.Hours24
-            : null
-        : clockType;
-    clockType = clockType == null
-        ? (minute || minuteSecond)
-            ? ClockType.Minutes
-            : null
-        : clockType;
     assert(clockType != null);
     TimeOfDay timeOfDay = TimeOfDay.fromDateTime(dateTime);
 
@@ -119,281 +122,258 @@ class AnalogClock extends StatefulWidget {
         : hour12Minute || hour24Minute || minuteSecond
             ? 1
             : 0;
-    print(timeOfDay.hour);
-
     await showDialog(
       context: context,
-      builder: (context1) => StatefulBuilder(
-        builder: (context2, setState) {
-          return AlertDialog(
-            contentPadding: EdgeInsets.all(0),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(30)),
-            ),
-            titlePadding: EdgeInsets.all(0),
-            // Design of the title.
-            title: Container(
-              decoration: BoxDecoration(
-                color: Colors.blueAccent,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
-              ),
-              height: MediaQuery.of(context2).size.height * 0.1,
-              child: Row(
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  SizedBox(
-                    width: 5,
-                  ),
-                  Text(
-                    'Select time',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Text(
-                    intl.DateFormat('dd/MM/yyyy').format(dateTime),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
-                  SizedBox(
-                    width: 5,
-                  ),
-                ],
-              ),
-            ),
-            elevation: 0,
-            content: StatefulBuilder(
-              builder: (context3, setState1) {
-                Function changeHour = (int hour) {
-                  print(timeOfDay);
-                  timeOfDay =
-                      timeOfDay.replacing(hour: getRealHour(hour, amPmPick));
-                  print(timeOfDay);
-                  clockType = clockType == ClockType.Hours12 ||
-                          clockType == ClockType.Hours24
-                      ? (hour12Minute ||
-                              hour12MinuteSecond ||
-                              hour24Minute ||
-                              hour24MinuteSecond)
-                          ? ClockType.Minutes
-                          : null
-                      : null;
-                  dateTime = DateTime(
-                    dateTime.year,
-                    dateTime.month,
-                    dateTime.day,
-                    timeOfDay.hour,
-                    timeOfDay.minute,
-                  );
-                  if (clockType == null) {
-                    Navigator.of(context).pop();
-                  }
-                  setState1(() {});
-                };
+      builder: (context1) => Dialog(
+        insetPadding: EdgeInsets.all(0),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(10)),
+        ),
+        child: StatefulBuilder(
+          builder: (context3, setState1) {
+            Function changeHour = (int hour) {
+              print(timeOfDay);
+              timeOfDay =
+                  timeOfDay.replacing(hour: getRealHour(hour, amPmPick));
+              print(timeOfDay);
+              // clockType = (hour12Minute ||
+              //         hour12MinuteSecond ||
+              //         hour24Minute ||
+              //         hour24MinuteSecond)
+              //     ? ClockType.Minutes
+              //     : null;
+              dateTime = DateTime(
+                dateTime.year,
+                dateTime.month,
+                dateTime.day,
+                timeOfDay.hour,
+                timeOfDay.minute,
+              );
+              if (clockType == null) {
+                Navigator.of(context).pop();
+              }
+              setState1(() {});
+            };
 
-                return Container(
-                  padding: EdgeInsets.only(
-                    top: 20,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.start,
+            Function changeMinute = (int minute) {
+              print(timeOfDay);
+              timeOfDay = timeOfDay.replacing(minute: minute);
+              print(timeOfDay);
+              clockType =
+                  (hour12MinuteSecond || hour24MinuteSecond || minuteSecond)
+                      ? ClockType.Seconds
+                      : null;
+              dateTime = DateTime(
+                dateTime.year,
+                dateTime.month,
+                dateTime.day,
+                timeOfDay.hour,
+                timeOfDay.minute,
+              );
+              if (clockType == null) {
+                Navigator.of(context).pop();
+              }
+              setState1(() {});
+            };
+            return Container(
+              width: screenWidth,
+              height: screenHeight,
+              padding: EdgeInsets.only(
+                top: 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Hours section
-                          buildSection(
-                            hour12 ||
-                                hour12Minute ||
-                                hour12MinuteSecond ||
-                                hour24 ||
-                                hour24Minute ||
-                                hour24MinuteSecond,
-                            () {
-                              clockType =
-                                  hour12 || hour12Minute || hour12MinuteSecond
-                                      ? ClockType.Hours12
-                                      : ClockType.Hours24;
-                              setState1(() {});
-                            },
-                            timeOfDay.hourOfPeriod < 10 &&
-                                    timeOfDay.hourOfPeriod != 0
-                                ? '0${timeOfDay.hourOfPeriod}'
-                                : '${timeOfDay.hourOfPeriod == 0 ? 12 : timeOfDay.hourOfPeriod}',
-                            clockType == ClockType.Hours12 ||
-                                clockType == ClockType.Hours24,
-                            MediaQuery.of(context3).size,
-                            amountSections,
-                            amountDots,
-                            hour12 || hour12Minute || hour12MinuteSecond,
-                          ),
-                          // Two dots :
-                          twoDots(hour12Minute ||
-                              hour12MinuteSecond ||
-                              hour24Minute ||
-                              hour24MinuteSecond),
-                          // Minutes section
-                          buildSection(
+                      // Hours section
+                      buildSection(
+                        hour12 ||
                             hour12Minute ||
-                                hour12MinuteSecond ||
-                                hour24Minute ||
-                                hour24MinuteSecond ||
-                                minute ||
-                                minuteSecond,
-                            () {
-                              clockType = ClockType.Minutes;
-                              setState1(() {});
-                            },
-                            timeOfDay.minute < 10
-                                ? '0${timeOfDay.minute}'
-                                : '${timeOfDay.minute}',
-                            clockType == ClockType.Minutes,
-                            MediaQuery.of(context3).size,
-                            amountSections,
-                            amountDots,
-                            hour12 || hour12Minute || hour12MinuteSecond,
-                          ),
-                          // Two dots :
-                          twoDots(hour12MinuteSecond ||
-                              hour24MinuteSecond ||
-                              minuteSecond),
-                          // Seconds section
-                          buildSection(
                             hour12MinuteSecond ||
-                                hour24MinuteSecond ||
-                                minuteSecond,
-                            () {
-                              clockType = ClockType.Seconds;
-                              setState1(() {});
-                            },
-                            timeOfDay.minute < 10
-                                ? '0${timeOfDay.minute}'
-                                : '${timeOfDay.minute}',
-                            clockType == ClockType.Seconds,
-                            MediaQuery.of(context3).size,
-                            amountSections,
-                            amountDots,
-                            hour12 || hour12Minute || hour12MinuteSecond,
+                            hour24 ||
+                            hour24Minute ||
+                            hour24MinuteSecond,
+                        () {
+                          clockType =
+                              hour12 || hour12Minute || hour12MinuteSecond
+                                  ? ClockType.Hours12
+                                  : ClockType.Hours24;
+                          setState1(() {});
+                        },
+                        timeOfDay.hourOfPeriod < 10 &&
+                                timeOfDay.hourOfPeriod != 0
+                            ? '0${timeOfDay.hourOfPeriod}'
+                            : '${timeOfDay.hourOfPeriod == 0 ? 12 : timeOfDay.hourOfPeriod}',
+                        clockType == ClockType.Hours12 ||
+                            clockType == ClockType.Hours24,
+                        MediaQuery.of(context).size,
+                        amountSections,
+                        amountDots,
+                        hour12 || hour12Minute || hour12MinuteSecond,
+                      ),
+                      // Two dots :
+                      twoDots(hour12Minute ||
+                          hour12MinuteSecond ||
+                          hour24Minute ||
+                          hour24MinuteSecond),
+                      // Minutes section
+                      buildSection(
+                        hour12Minute ||
+                            hour12MinuteSecond ||
+                            hour24Minute ||
+                            hour24MinuteSecond ||
+                            minute ||
+                            minuteSecond,
+                        () {
+                          clockType = ClockType.Minutes;
+                          setState1(() {});
+                        },
+                        timeOfDay.minute < 10
+                            ? '0${timeOfDay.minute}'
+                            : '${timeOfDay.minute}',
+                        clockType == ClockType.Minutes,
+                        MediaQuery.of(context).size,
+                        amountSections,
+                        amountDots,
+                        hour12 || hour12Minute || hour12MinuteSecond,
+                      ),
+                      // Two dots :
+                      twoDots(hour12MinuteSecond ||
+                          hour24MinuteSecond ||
+                          minuteSecond),
+                      // Seconds section
+                      buildSection(
+                        hour12MinuteSecond ||
+                            hour24MinuteSecond ||
+                            minuteSecond ||
+                            second,
+                        () {
+                          clockType = ClockType.Seconds;
+                          setState1(() {});
+                        },
+                        timeOfDay.minute < 10
+                            ? '0${timeOfDay.minute}'
+                            : '${timeOfDay.minute}',
+                        clockType == ClockType.Seconds,
+                        MediaQuery.of(context).size,
+                        amountSections,
+                        amountDots,
+                        hour12 || hour12Minute || hour12MinuteSecond,
+                      ),
+                      // AM PM pick
+                      Visibility(
+                        visible: hour12 || hour12Minute || hour12MinuteSecond,
+                        child: Padding(
+                          padding: const EdgeInsets.only(
+                            left: 10,
                           ),
-                          // AM PM pick
-                          Visibility(
-                            visible:
-                                hour12 || hour12Minute || hour12MinuteSecond,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                left: 10,
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // AM section
-                                  Container(
-                                    width: 40,
-                                    height: 30,
-                                    color: amPmPick ? Colors.blue[50] : null,
-                                    child: TextButton(
-                                      onPressed: () {
-                                        amPmPick = true;
-                                        setState1(() {});
-                                      },
-                                      child: Text(
-                                        'AM',
-                                        style: TextStyle(
-                                          color: amPmPick
-                                              ? Colors.blue[500]
-                                              : Colors.black,
-                                          fontSize: 12,
-                                        ),
-                                      ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // AM section
+                              Container(
+                                width: 40,
+                                height: 27.5,
+                                color: amPmPick ? Colors.blue[50] : null,
+                                child: TextButton(
+                                  onPressed: () {
+                                    amPmPick = true;
+                                    setState1(() {});
+                                  },
+                                  child: Text(
+                                    'AM',
+                                    style: TextStyle(
+                                      color: amPmPick
+                                          ? Colors.blue[500]
+                                          : Colors.black,
+                                      fontSize: 12,
                                     ),
                                   ),
-                                  // PM section
-                                  Container(
-                                    width: 40,
-                                    height: 30,
-                                    color: !amPmPick ? Colors.blue[50] : null,
-                                    child: TextButton(
-                                      style: ButtonStyle(),
-                                      onPressed: () {
-                                        amPmPick = false;
-                                        setState1(() {});
-                                      },
-                                      child: Text(
-                                        'PM',
-                                        style: TextStyle(
-                                          color: !amPmPick
-                                              ? Colors.blue[500]
-                                              : Colors.black,
-                                          fontSize: 12,
-                                        ),
-                                      ),
+                                ),
+                              ),
+                              // PM section
+                              Container(
+                                width: 40,
+                                height: 28,
+                                color: !amPmPick ? Colors.blue[50] : null,
+                                child: TextButton(
+                                  style: ButtonStyle(),
+                                  onPressed: () {
+                                    amPmPick = false;
+                                    setState1(() {});
+                                  },
+                                  child: Text(
+                                    'PM',
+                                    style: TextStyle(
+                                      color: !amPmPick
+                                          ? Colors.blue[500]
+                                          : Colors.black,
+                                      fontSize: 12,
                                     ),
-                                  )
-                                ],
-                              ),
-                            ),
+                                  ),
+                                ),
+                              )
+                            ],
                           ),
-                        ],
-                      ),
-                      SizedBox(
-                        height: 20,
-                      ),
-                      AnalogClock(
-                        clockType: clockType,
-                        changeHour: changeHour,
-                        timeOfDay: timeOfDay,
-                      ),
-                      SizedBox(
-                        height: 20,
-                      ),
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: Row(
-                          textDirection: TextDirection.rtl,
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                              width: 10,
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: Text(
-                                "OK",
-                                style: TextStyle(
-                                  color: Colors.blueAccent,
-                                ),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: Text(
-                                "CANCEL",
-                                style: TextStyle(
-                                  color: Colors.blueAccent,
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
                       ),
                     ],
                   ),
-                );
-              },
-            ),
-          );
-        },
+                  SizedBox(
+                    height: 20,
+                  ),
+                  AnalogClock(
+                    width: screenHeight - 110,
+                    height: screenHeight - 110,
+                    clockType: clockType,
+                    changeHour: changeHour,
+                    changeMinute: changeMinute,
+                    timeOfDay: timeOfDay,
+                  ),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  Align(
+                    alignment: Alignment.bottomRight,
+                    child: Row(
+                      textDirection: TextDirection.rtl,
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 10,
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(
+                            "OK",
+                            style: TextStyle(
+                              color: Colors.blueAccent,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(
+                            "CANCEL",
+                            style: TextStyle(
+                              color: Colors.blueAccent,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
     return dateTime;
@@ -406,21 +386,23 @@ class AnalogClock extends StatefulWidget {
 class _AnalogClockState extends State<AnalogClock> {
   @override
   Widget build(BuildContext context) {
+    print(widget.width);
+    print(widget.height);
     return Container(
       padding: EdgeInsets.only(
         left: 25,
         right: 25,
         bottom: 0,
       ),
-      width: widget.width * 2,
-      height: widget.height + 60,
+      width: widget.radius * 2,
+      height: widget.radius + 60,
       child: Stack(
         children: [
           Positioned(
             child: CustomPaint(
               size: Size(
-                widget.width * 2,
-                widget.height + 50,
+                widget.radius * 2,
+                widget.radius + 50,
               ),
               painter: StrokePainter(
                 clockType: widget.clockType,
@@ -429,10 +411,11 @@ class _AnalogClockState extends State<AnalogClock> {
             ),
           ),
           ClockNumbers(
-            width: widget.width,
-            height: widget.height,
+            width: widget.radius,
+            height: widget.radius,
             clockType: widget.clockType,
             changeHour: widget.changeHour,
+            changeMinute: widget.changeMinute,
             timeOfDay: widget.timeOfDay,
           ),
         ],
@@ -445,6 +428,7 @@ class StrokePainter extends CustomPainter {
   final Size size;
   final ClockType clockType;
   final TimeOfDay timeOfDay;
+  final double margin = 7;
 
   StrokePainter({
     Key key,
@@ -457,8 +441,8 @@ class StrokePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     canvas.drawCircle(
       Offset(
-        size.width / 2,
-        size.height / 2,
+        size.width / 2 - margin,
+        size.height / 2 - margin,
       ),
       5,
       Paint()..color = Colors.blueAccent,
@@ -469,8 +453,8 @@ class StrokePainter extends CustomPainter {
   void drawStroke(Canvas canvas, Size size) {
     canvas.drawLine(
       Offset(
-        size.width / 2,
-        size.height / 2,
+        size.width / 2 - margin,
+        size.height / 2 - margin,
       ),
       lastPoint(size),
       Paint()
@@ -483,34 +467,36 @@ class StrokePainter extends CustomPainter {
     double width = 0;
     double height = 0;
     double spacer = 18;
+    double realWidth = size.width - margin * 2;
+    double realHeight = size.height - margin * 2;
     int hour = timeOfDay.hourOfPeriod;
     switch (clockType) {
       case ClockType.Hours12:
         int w = hour % 3;
         if (hour == 0) {
-          width = size.width / 2;
-          height = spacer;
+          width = realWidth / 2;
+          height = 0;
         } else if (hour < 3) {
-          width = size.width / 2 + (w / 6) * size.width + spacer;
-          height = (w / 6) * size.height - spacer;
+          width = realWidth / 2 + (w / 6) * realWidth + spacer;
+          height = (w / 6) * realHeight - spacer;
         } else if (hour == 3) {
-          width = size.width * 0.9;
-          height = size.height / 2;
+          width = realWidth;
+          height = realHeight / 2;
         } else if (hour < 6) {
-          width = size.width - (w / 6) * size.width + spacer;
-          height = size.height / 2 + (w / 6) * size.height + spacer;
+          width = realWidth - (w / 6) * realWidth + spacer;
+          height = realHeight / 2 + (w / 6) * realHeight + spacer;
         } else if (hour == 6) {
-          width = size.width / 2;
-          height = size.height - spacer;
+          width = realWidth / 2;
+          height = realHeight - spacer;
         } else if (hour < 9) {
-          width = size.width / 2 - (w / 6) * size.width - spacer;
-          height = size.height - (w / 6) * size.height + spacer;
+          width = realWidth / 2 - (w / 6) * realWidth - spacer;
+          height = realHeight - (w / 6) * realHeight + spacer;
         } else if (hour == 9) {
           width = spacer;
-          height = size.height / 2;
+          height = realHeight / 2;
         } else if (hour < 12) {
-          width = (w / 6) * size.width - spacer;
-          height = size.height / 2 - (w / 6) * size.height - spacer;
+          width = (w / 6) * realWidth - spacer;
+          height = realHeight / 2 - (w / 6) * realHeight - spacer;
         }
         break;
       case ClockType.Hours24:
@@ -545,6 +531,8 @@ class ClockNumbers extends StatefulWidget {
 
   final Function changeHour;
 
+  final Function changeMinute;
+
   final TimeOfDay timeOfDay;
 
   ClockNumbers({
@@ -553,6 +541,7 @@ class ClockNumbers extends StatefulWidget {
     this.height,
     this.clockType = ClockType.Hours12,
     this.changeHour,
+    this.changeMinute,
     this.timeOfDay,
   }) : super(key: key);
 
@@ -561,7 +550,7 @@ class ClockNumbers extends StatefulWidget {
 }
 
 class _ClockNumbersState extends State<ClockNumbers> {
-  final double circleRadius = 48;
+  final double circleRadius = 36;
   int chosenNumber = 12;
 
   @override
@@ -582,6 +571,7 @@ class _ClockNumbersState extends State<ClockNumbers> {
         numbers = build12HoursNumbers();
         break;
       case ClockType.Minutes:
+        numbers = buildMinutesNumbers();
         // TODO: Handle this case.
         break;
       case ClockType.Seconds:
@@ -598,16 +588,16 @@ class _ClockNumbersState extends State<ClockNumbers> {
     double width = widget.width / 2;
     double height = widget.height / 2;
     double spacer = 18;
-    Function changeHour = () {};
     for (int i = 0; i < 3; i++) {
-      // 0-3
+      // 12-3
       numbers.add(
         Positioned(
           height: circleRadius,
           width: circleRadius,
           top: (i / 6) * widget.height - (i == 0 ? 0 : spacer),
           left: width + (i / 6) * widget.width + (i == 0 ? 0 : spacer),
-          child: numberButton(i == 0 ? 12 : i, changeHour),
+          child: numberButton(
+              i == 0 ? 12 : i, widget.changeHour, ClockType.Hours12),
         ),
       );
       // 3-6
@@ -617,7 +607,7 @@ class _ClockNumbersState extends State<ClockNumbers> {
           width: circleRadius,
           top: height + (i / 6) * widget.height + (i == 0 ? 0 : spacer),
           left: width + ((3 - i) / 6) * widget.width + (i == 0 ? 0 : spacer),
-          child: numberButton(i + 3, changeHour),
+          child: numberButton(i + 3, widget.changeHour, ClockType.Hours12),
         ),
       );
       // 6-9
@@ -627,7 +617,7 @@ class _ClockNumbersState extends State<ClockNumbers> {
           width: circleRadius,
           top: height + ((3 - i) / 6) * widget.height + (i == 0 ? 0 : spacer),
           left: width - (i / 6) * widget.width - (i == 0 ? 0 : spacer),
-          child: numberButton(i + 6, changeHour),
+          child: numberButton(i + 6, widget.changeHour, ClockType.Hours12),
         ),
       );
       // 9-12
@@ -637,7 +627,7 @@ class _ClockNumbersState extends State<ClockNumbers> {
           width: circleRadius,
           top: height - (i / 6) * widget.height - (i == 0 ? 0 : spacer),
           left: (i / 6) * widget.width - (i == 0 ? 0 : spacer),
-          child: numberButton(i + 9, changeHour),
+          child: numberButton(i + 9, widget.changeHour, ClockType.Hours12),
         ),
       );
     }
@@ -645,27 +635,82 @@ class _ClockNumbersState extends State<ClockNumbers> {
     return numbers;
   }
 
-  RawMaterialButton numberButton(int number, Function onChange) {
+  RawMaterialButton numberButton(
+      int number, Function onChange, ClockType clockType) {
     return RawMaterialButton(
       onPressed: () {
         chosenNumber = number;
         setState(() {});
-        widget.changeHour(number);
+        onChange(number);
       },
       fillColor: number == chosenNumber ? Colors.blueAccent : null,
       highlightColor: Colors.blueAccent,
-      child: numberText(number),
+      child: numberText(number, clockType),
       shape: CircleBorder(),
     );
   }
 
-  Text numberText(int number) {
+  Text numberText(int number, ClockType clockType) {
     return Text(
       (number).toString(),
       style: TextStyle(
         color: chosenNumber == number ? Colors.white : Colors.black,
-        fontSize: 18,
+        fontSize: 14,
       ),
     );
+  }
+
+  List<Widget> buildMinutesNumbers() {
+    List<Widget> numbers = [];
+    double width = widget.width / 2;
+    double height = widget.height / 2;
+    double spacer = 18;
+    for (int i = 0; i < 3; i++) {
+      // 12-3
+      numbers.add(
+        Positioned(
+          height: circleRadius,
+          width: circleRadius,
+          top: (i / 6) * widget.height - (i == 0 ? 0 : spacer),
+          left: width + (i / 6) * widget.width + (i == 0 ? 0 : spacer),
+          child: numberButton(
+              i == 0 ? 60 : i * 5, widget.changeMinute, ClockType.Minutes),
+        ),
+      );
+      // 3-6
+      numbers.add(
+        Positioned(
+          height: circleRadius,
+          width: circleRadius,
+          top: height + (i / 6) * widget.height + (i == 0 ? 0 : spacer),
+          left: width + ((3 - i) / 6) * widget.width + (i == 0 ? 0 : spacer),
+          child:
+              numberButton(i * 5 + 15, widget.changeMinute, ClockType.Minutes),
+        ),
+      );
+      // 6-9
+      numbers.add(
+        Positioned(
+          height: circleRadius,
+          width: circleRadius,
+          top: height + ((3 - i) / 6) * widget.height + (i == 0 ? 0 : spacer),
+          left: width - (i / 6) * widget.width - (i == 0 ? 0 : spacer),
+          child:
+              numberButton(i * 5 + 30, widget.changeMinute, ClockType.Minutes),
+        ),
+      );
+      // 9-12
+      numbers.add(
+        Positioned(
+          height: circleRadius,
+          width: circleRadius,
+          top: height - (i / 6) * widget.height - (i == 0 ? 0 : spacer),
+          left: (i / 6) * widget.width - (i == 0 ? 0 : spacer),
+          child:
+              numberButton(i * 5 + 45, widget.changeMinute, ClockType.Minutes),
+        ),
+      );
+    }
+    return numbers;
   }
 }

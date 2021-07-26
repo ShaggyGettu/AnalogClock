@@ -31,10 +31,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _incrementCounter() async {
     DateTime dateTime;
+    print(MediaQuery.of(context).size);
+
     dateTime = await AnalogClock.showAnalogClock(
       context: context,
       dateTime: DateTime.now().subtract(Duration(days: 3)),
       hour12MinuteSecond: true,
+      screenWidth: 200,
+      screenHeight: 450,
     );
     print(dateTime);
     // TimeOfDay time;
@@ -46,6 +50,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    print(MediaQuery.of(context).size);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
