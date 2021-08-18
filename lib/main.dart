@@ -37,8 +37,8 @@ class _MyHomePageState extends State<MyHomePage> {
       context: context,
       dateTime: DateTime.now().subtract(Duration(days: 3)),
       hour12MinuteSecond: true,
-      screenWidth: 200,
-      screenHeight: 450,
+      screenWidth: 1,
+      screenHeight: 1,
     );
     print(dateTime);
     // TimeOfDay time;

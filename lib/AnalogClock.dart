@@ -1,15 +1,17 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 class AnalogClock extends StatefulWidget {
-  final double radius = 180;
+  final double radius = 140;
   final double width;
   final double height;
   final ClockType clockType;
   final Function changeHour;
   final Function changeMinute;
   final TimeOfDay timeOfDay;
-  static const double _minimumDialogWidth = 200;
-  static const double _minimumDialogHeight = 408;
+  static const double _minimumDialogWidth = 350;
+  static const double _minimumDialogHeight = 350;
 
   const AnalogClock({
     Key key,
@@ -72,8 +74,8 @@ class AnalogClock extends StatefulWidget {
   static Future<DateTime> showAnalogClock({
     @required BuildContext context,
     DateTime dateTime,
-    double screenWidth = 200,
-    double screenHeight = 450,
+    double screenWidth = 280,
+    double screenHeight = 350,
     bool hour12 = false,
     bool hour24 = false,
     bool hour12Minute = false,
@@ -84,6 +86,8 @@ class AnalogClock extends StatefulWidget {
     bool minuteSecond = false,
     bool second = false,
   }) async {
+    if (screenHeight < 380) screenHeight = 380;
+    if (screenWidth < 280) screenWidth = 280;
     if (dateTime == null) dateTime = DateTime.now();
     ClockType clockType = (hour12 || hour12Minute || hour12MinuteSecond)
         ? ClockType.Hours12
@@ -132,16 +136,16 @@ class AnalogClock extends StatefulWidget {
         child: StatefulBuilder(
           builder: (context3, setState1) {
             Function changeHour = (int hour) {
-              print(timeOfDay);
-              timeOfDay =
-                  timeOfDay.replacing(hour: getRealHour(hour, amPmPick));
-              print(timeOfDay);
-              // clockType = (hour12Minute ||
-              //         hour12MinuteSecond ||
-              //         hour24Minute ||
-              //         hour24MinuteSecond)
-              //     ? ClockType.Minutes
-              //     : null;
+              timeOfDay = timeOfDay.replacing(
+                hour: getRealHour(hour, amPmPick),
+                minute: timeOfDay.minute,
+              );
+              clockType = (hour12Minute ||
+                      hour12MinuteSecond ||
+                      hour24Minute ||
+                      hour24MinuteSecond)
+                  ? ClockType.Minutes
+                  : null;
               dateTime = DateTime(
                 dateTime.year,
                 dateTime.month,
@@ -156,13 +160,13 @@ class AnalogClock extends StatefulWidget {
             };
 
             Function changeMinute = (int minute) {
-              print(timeOfDay);
-              timeOfDay = timeOfDay.replacing(minute: minute);
-              print(timeOfDay);
-              clockType =
-                  (hour12MinuteSecond || hour24MinuteSecond || minuteSecond)
-                      ? ClockType.Seconds
-                      : null;
+              if (minute == 60) minute = 0;
+              timeOfDay =
+                  timeOfDay.replacing(hour: timeOfDay.hour, minute: minute);
+              // clockType =
+              //     (hour12MinuteSecond || hour24MinuteSecond || minuteSecond)
+              //         ? ClockType.Seconds
+              //         : null;
               dateTime = DateTime(
                 dateTime.year,
                 dateTime.month,
@@ -183,12 +187,11 @@ class AnalogClock extends StatefulWidget {
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisSize: MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       // Hours section
                       buildSection(
@@ -328,15 +331,12 @@ class AnalogClock extends StatefulWidget {
                     height: 20,
                   ),
                   AnalogClock(
-                    width: screenHeight - 110,
-                    height: screenHeight - 110,
+                    width: buildRadius(screenWidth, screenHeight - 184),
+                    height: buildRadius(screenWidth, screenHeight - 184),
                     clockType: clockType,
                     changeHour: changeHour,
                     changeMinute: changeMinute,
                     timeOfDay: timeOfDay,
-                  ),
-                  SizedBox(
-                    height: 20,
                   ),
                   Align(
                     alignment: Alignment.bottomRight,
@@ -379,42 +379,48 @@ class AnalogClock extends StatefulWidget {
     return dateTime;
   }
 
-  static int getRealHour(int hour, bool amPmPick) =>
-      hour == 12 ? 0 : hour + (amPmPick ? 0 : 12);
+  static double buildRadius(double height, double width) => min(width, height);
+
+  static int getRealHour(int hour, bool amPmPick) => amPmPick
+      ? hour == 12
+          ? 0
+          : hour
+      : hour == 12
+          ? hour
+          : hour + 12;
+  // hour == 12 ? 0 : hour + (amPmPick ? 0 : 12);
 }
 
 class _AnalogClockState extends State<AnalogClock> {
   @override
   Widget build(BuildContext context) {
-    print(widget.width);
-    print(widget.height);
     return Container(
-      padding: EdgeInsets.only(
-        left: 25,
-        right: 25,
-        bottom: 0,
-      ),
-      width: widget.radius * 2,
-      height: widget.radius + 60,
+      width: widget.width * 1.2,
+      height: widget.height * 1.2,
       child: Stack(
         children: [
           Positioned(
             child: CustomPaint(
               size: Size(
-                widget.radius * 2,
-                widget.radius + 50,
+                widget.width * 1.2,
+                widget.height * 1.2,
               ),
               painter: StrokePainter(
+                containerSize: Size(
+                  widget.width * 1.2,
+                  widget.height * 1.2,
+                ),
                 clockType: widget.clockType,
                 timeOfDay: widget.timeOfDay,
               ),
             ),
           ),
           ClockNumbers(
-            width: widget.radius,
-            height: widget.radius,
+            diameter: widget.width,
             clockType: widget.clockType,
-            changeHour: widget.changeHour,
+            change: widget.clockType == ClockType.Hours12
+                ? widget.changeHour
+                : widget.changeMinute,
             changeMinute: widget.changeMinute,
             timeOfDay: widget.timeOfDay,
           ),
@@ -425,85 +431,67 @@ class _AnalogClockState extends State<AnalogClock> {
 }
 
 class StrokePainter extends CustomPainter {
-  final Size size;
+  final Size containerSize;
   final ClockType clockType;
   final TimeOfDay timeOfDay;
-  final double margin = 7;
 
   StrokePainter({
     Key key,
-    this.size,
     this.clockType,
     this.timeOfDay,
+    this.containerSize,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
+    double diameter = containerSize.width - 10;
+    double height = containerSize.height - 10;
     canvas.drawCircle(
       Offset(
-        size.width / 2 - margin,
-        size.height / 2 - margin,
+        diameter / 2,
+        height / 2,
       ),
       5,
       Paint()..color = Colors.blueAccent,
     );
-    drawStroke(canvas, size);
+    drawStroke(canvas, size, diameter);
   }
 
-  void drawStroke(Canvas canvas, Size size) {
+  void drawStroke(Canvas canvas, Size size, double diameter) {
     canvas.drawLine(
       Offset(
-        size.width / 2 - margin,
-        size.height / 2 - margin,
+        diameter / 2,
+        diameter / 2,
       ),
-      lastPoint(size),
+      lastPoint(diameter),
       Paint()
         ..color = Colors.blueAccent
         ..strokeWidth = 3,
     );
   }
 
-  Offset lastPoint(Size size) {
+  Offset lastPoint(double diameter) {
     double width = 0;
     double height = 0;
-    double spacer = 18;
-    double realWidth = size.width - margin * 2;
-    double realHeight = size.height - margin * 2;
+    double radius = diameter / 2;
     int hour = timeOfDay.hourOfPeriod;
     switch (clockType) {
-      case ClockType.Hours12:
-        int w = hour % 3;
-        if (hour == 0) {
-          width = realWidth / 2;
-          height = 0;
-        } else if (hour < 3) {
-          width = realWidth / 2 + (w / 6) * realWidth + spacer;
-          height = (w / 6) * realHeight - spacer;
-        } else if (hour == 3) {
-          width = realWidth;
-          height = realHeight / 2;
-        } else if (hour < 6) {
-          width = realWidth - (w / 6) * realWidth + spacer;
-          height = realHeight / 2 + (w / 6) * realHeight + spacer;
-        } else if (hour == 6) {
-          width = realWidth / 2;
-          height = realHeight - spacer;
-        } else if (hour < 9) {
-          width = realWidth / 2 - (w / 6) * realWidth - spacer;
-          height = realHeight - (w / 6) * realHeight + spacer;
-        } else if (hour == 9) {
-          width = spacer;
-          height = realHeight / 2;
-        } else if (hour < 12) {
-          width = (w / 6) * realWidth - spacer;
-          height = realHeight / 2 - (w / 6) * realHeight - spacer;
-        }
-        break;
       case ClockType.Hours24:
+        // TODO: Handle this case.
+        break;
+      case ClockType.Hours12:
+        width = radius + sin((pi / 30) * hour * 5) * radius;
+        height = radius - cos((pi / 30) * hour * 5) * radius;
+
         break;
       case ClockType.Minutes:
+        int minute = timeOfDay.minute;
+        width = radius + sin((pi / 30) * minute) * radius;
+        height = radius - cos((pi / 30) * minute) * radius;
         break;
-      default:
+      case ClockType.Seconds:
+        // TODO: Handle this case.
+        break;
     }
     return Offset(width, height);
   }
@@ -523,13 +511,11 @@ enum ClockType {
 }
 
 class ClockNumbers extends StatefulWidget {
-  final double width;
-
-  final double height;
+  final double diameter;
 
   final ClockType clockType;
 
-  final Function changeHour;
+  final Function change;
 
   final Function changeMinute;
 
@@ -537,10 +523,9 @@ class ClockNumbers extends StatefulWidget {
 
   ClockNumbers({
     Key key,
-    this.width,
-    this.height,
+    this.diameter,
     this.clockType = ClockType.Hours12,
-    this.changeHour,
+    this.change,
     this.changeMinute,
     this.timeOfDay,
   }) : super(key: key);
@@ -550,13 +535,14 @@ class ClockNumbers extends StatefulWidget {
 }
 
 class _ClockNumbersState extends State<ClockNumbers> {
-  final double circleRadius = 36;
+  final double shrinkCircleRadius = 22;
+  final double circleRadius = 33;
+  double circleCenter;
   int chosenNumber = 12;
 
   @override
   initState() {
-    chosenNumber =
-        widget.timeOfDay.hourOfPeriod == 0 ? 12 : widget.timeOfDay.hourOfPeriod;
+    circleCenter = circleRadius / 2;
     super.initState();
   }
 
@@ -568,11 +554,15 @@ class _ClockNumbersState extends State<ClockNumbers> {
         // TODO: Handle this case.
         break;
       case ClockType.Hours12:
+        chosenNumber = widget.timeOfDay.hourOfPeriod == 0
+            ? 12
+            : widget.timeOfDay.hourOfPeriod;
         numbers = build12HoursNumbers();
         break;
       case ClockType.Minutes:
+        chosenNumber = widget.timeOfDay.minute;
+        chosenNumber = chosenNumber == 0 ? 60 : chosenNumber;
         numbers = buildMinutesNumbers();
-        // TODO: Handle this case.
         break;
       case ClockType.Seconds:
         // TODO: Handle this case.
@@ -583,131 +573,86 @@ class _ClockNumbersState extends State<ClockNumbers> {
     );
   }
 
-  List<Widget> build12HoursNumbers() {
-    List<Widget> numbers = [];
-    double width = widget.width / 2;
-    double height = widget.height / 2;
-    double spacer = 18;
-    for (int i = 0; i < 3; i++) {
-      // 12-3
-      numbers.add(
-        Positioned(
-          height: circleRadius,
-          width: circleRadius,
-          top: (i / 6) * widget.height - (i == 0 ? 0 : spacer),
-          left: width + (i / 6) * widget.width + (i == 0 ? 0 : spacer),
-          child: numberButton(
-              i == 0 ? 12 : i, widget.changeHour, ClockType.Hours12),
-        ),
-      );
-      // 3-6
-      numbers.add(
-        Positioned(
-          height: circleRadius,
-          width: circleRadius,
-          top: height + (i / 6) * widget.height + (i == 0 ? 0 : spacer),
-          left: width + ((3 - i) / 6) * widget.width + (i == 0 ? 0 : spacer),
-          child: numberButton(i + 3, widget.changeHour, ClockType.Hours12),
-        ),
-      );
-      // 6-9
-      numbers.add(
-        Positioned(
-          height: circleRadius,
-          width: circleRadius,
-          top: height + ((3 - i) / 6) * widget.height + (i == 0 ? 0 : spacer),
-          left: width - (i / 6) * widget.width - (i == 0 ? 0 : spacer),
-          child: numberButton(i + 6, widget.changeHour, ClockType.Hours12),
-        ),
-      );
-      // 9-12
-      numbers.add(
-        Positioned(
-          height: circleRadius,
-          width: circleRadius,
-          top: height - (i / 6) * widget.height - (i == 0 ? 0 : spacer),
-          left: (i / 6) * widget.width - (i == 0 ? 0 : spacer),
-          child: numberButton(i + 9, widget.changeHour, ClockType.Hours12),
-        ),
-      );
-    }
-
-    return numbers;
-  }
-
   RawMaterialButton numberButton(
       int number, Function onChange, ClockType clockType) {
+    bool isSmall = number % 5 != 0 &&
+        (clockType == ClockType.Minutes || clockType == ClockType.Seconds);
+    var blueAccent =
+        isSmall ? Colors.blueAccent.withOpacity(0.65) : Colors.blueAccent;
     return RawMaterialButton(
       onPressed: () {
         chosenNumber = number;
         setState(() {});
         onChange(number);
       },
-      fillColor: number == chosenNumber ? Colors.blueAccent : null,
-      highlightColor: Colors.blueAccent,
-      child: numberText(number, clockType),
+      elevation: 0,
+      fillColor: number == chosenNumber ? blueAccent : null,
+      highlightColor: Colors.blueAccent[100],
+      focusColor: Colors.blueAccent[50],
+      child: isSmall ? null : numberText(number, clockType),
       shape: CircleBorder(),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      constraints: BoxConstraints(
+          maxWidth: chosenNumber == number ? 30 : 20,
+          maxHeight: chosenNumber == number ? 30 : 20),
     );
   }
 
   Text numberText(int number, ClockType clockType) {
+    String text = number.toString();
+    if (clockType == ClockType.Minutes || clockType == ClockType.Seconds)
+      text = number % 5 == 0 ? text : '·';
     return Text(
-      (number).toString(),
+      text,
       style: TextStyle(
         color: chosenNumber == number ? Colors.white : Colors.black,
-        fontSize: 14,
+        fontSize: number % 5 != 0 &&
+                (clockType == ClockType.Minutes ||
+                    clockType == ClockType.Seconds)
+            ? 15
+            : 14,
+        fontWeight: number % 5 != 0 &&
+                (clockType == ClockType.Minutes ||
+                    clockType == ClockType.Seconds)
+            ? FontWeight.bold
+            : null,
       ),
     );
   }
 
+  List<Widget> build12HoursNumbers() {
+    List<Widget> numbers = [];
+    double radius = widget.diameter / 2;
+    double positionedWidth = 30, positionedHeight = 30;
+    for (int i = 5; i <= 60; i = i + 5) {
+      numbers.add(
+        Positioned(
+            left: radius + sin((pi / 30) * i) * radius,
+            top: radius - cos((pi / 30) * i) * radius,
+            width: positionedWidth,
+            height: positionedHeight,
+            child: numberButton(
+              i ~/ 5,
+              widget.change,
+              ClockType.Hours12,
+            )),
+      );
+    }
+    return numbers;
+  }
+
   List<Widget> buildMinutesNumbers() {
     List<Widget> numbers = [];
-    double width = widget.width / 2;
-    double height = widget.height / 2;
-    double spacer = 18;
-    for (int i = 0; i < 3; i++) {
-      // 12-3
+    double radius = widget.diameter / 2;
+    double positionedWidth = 30, positionedHeight = 30;
+    for (int i = 1; i <= 60; i++) {
       numbers.add(
         Positioned(
-          height: circleRadius,
-          width: circleRadius,
-          top: (i / 6) * widget.height - (i == 0 ? 0 : spacer),
-          left: width + (i / 6) * widget.width + (i == 0 ? 0 : spacer),
-          child: numberButton(
-              i == 0 ? 60 : i * 5, widget.changeMinute, ClockType.Minutes),
-        ),
-      );
-      // 3-6
-      numbers.add(
-        Positioned(
-          height: circleRadius,
-          width: circleRadius,
-          top: height + (i / 6) * widget.height + (i == 0 ? 0 : spacer),
-          left: width + ((3 - i) / 6) * widget.width + (i == 0 ? 0 : spacer),
-          child:
-              numberButton(i * 5 + 15, widget.changeMinute, ClockType.Minutes),
-        ),
-      );
-      // 6-9
-      numbers.add(
-        Positioned(
-          height: circleRadius,
-          width: circleRadius,
-          top: height + ((3 - i) / 6) * widget.height + (i == 0 ? 0 : spacer),
-          left: width - (i / 6) * widget.width - (i == 0 ? 0 : spacer),
-          child:
-              numberButton(i * 5 + 30, widget.changeMinute, ClockType.Minutes),
-        ),
-      );
-      // 9-12
-      numbers.add(
-        Positioned(
-          height: circleRadius,
-          width: circleRadius,
-          top: height - (i / 6) * widget.height - (i == 0 ? 0 : spacer),
-          left: (i / 6) * widget.width - (i == 0 ? 0 : spacer),
-          child:
-              numberButton(i * 5 + 45, widget.changeMinute, ClockType.Minutes),
+          left: radius + sin((pi / 30) * i) * radius,
+          top: (radius - cos((pi / 30) * i) * radius),
+          width: positionedWidth,
+          height: positionedHeight,
+          child: numberButton(i, widget.change, ClockType.Minutes),
         ),
       );
     }
