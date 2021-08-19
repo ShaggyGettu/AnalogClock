@@ -9,9 +9,9 @@ class AnalogClock extends StatefulWidget {
   final ClockType clockType;
   final Function changeHour;
   final Function changeMinute;
+  final Function changeSecond;
   final TimeOfDay timeOfDay;
-  static const double _minimumDialogWidth = 350;
-  static const double _minimumDialogHeight = 350;
+  final DateTime dateTime;
 
   const AnalogClock({
     Key key,
@@ -20,7 +20,9 @@ class AnalogClock extends StatefulWidget {
     this.height,
     this.changeHour,
     this.changeMinute,
+    this.changeSecond,
     this.timeOfDay,
+    this.dateTime,
   }) : super(key: key);
   @override
   _AnalogClockState createState() => _AnalogClockState();
@@ -126,7 +128,7 @@ class AnalogClock extends StatefulWidget {
         : hour12Minute || hour24Minute || minuteSecond
             ? 1
             : 0;
-    await showDialog(
+    return await showDialog<DateTime>(
       context: context,
       builder: (context1) => Dialog(
         insetPadding: EdgeInsets.all(0),
@@ -135,48 +137,62 @@ class AnalogClock extends StatefulWidget {
         ),
         child: StatefulBuilder(
           builder: (context3, setState1) {
-            Function changeHour = (int hour) {
-              timeOfDay = timeOfDay.replacing(
-                hour: getRealHour(hour, amPmPick),
-                minute: timeOfDay.minute,
-              );
-              clockType = (hour12Minute ||
-                      hour12MinuteSecond ||
-                      hour24Minute ||
-                      hour24MinuteSecond)
-                  ? ClockType.Minutes
-                  : null;
+            Function changeHour = (int hour, {bool applyHour = true}) {
+              timeOfDay =
+                  timeOfDay.replacing(hour: getRealHour(hour, amPmPick));
+              if (applyHour)
+                clockType = (hour12Minute ||
+                        hour12MinuteSecond ||
+                        hour24Minute ||
+                        hour24MinuteSecond)
+                    ? ClockType.Minutes
+                    : null;
               dateTime = DateTime(
                 dateTime.year,
                 dateTime.month,
                 dateTime.day,
                 timeOfDay.hour,
-                timeOfDay.minute,
+                dateTime.minute,
+                dateTime.second,
               );
               if (clockType == null) {
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(dateTime);
               }
               setState1(() {});
             };
 
-            Function changeMinute = (int minute) {
+            Function changeMinute = (int minute, {bool applyMinute = true}) {
               if (minute == 60) minute = 0;
-              timeOfDay =
-                  timeOfDay.replacing(hour: timeOfDay.hour, minute: minute);
-              // clockType =
-              //     (hour12MinuteSecond || hour24MinuteSecond || minuteSecond)
-              //         ? ClockType.Seconds
-              //         : null;
+              timeOfDay = timeOfDay.replacing(minute: minute);
+              if (applyMinute)
+                clockType =
+                    (hour12MinuteSecond || hour24MinuteSecond || minuteSecond)
+                        ? ClockType.Seconds
+                        : null;
               dateTime = DateTime(
                 dateTime.year,
                 dateTime.month,
                 dateTime.day,
-                timeOfDay.hour,
+                dateTime.hour,
                 timeOfDay.minute,
+                dateTime.second,
               );
               if (clockType == null) {
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(dateTime);
               }
+              setState1(() {});
+            };
+            Function changeSecond = (int second) {
+              if (second == 60) second = 0;
+              dateTime = DateTime(
+                dateTime.year,
+                dateTime.month,
+                dateTime.day,
+                dateTime.hour,
+                dateTime.minute,
+                second,
+              );
+              if (clockType == null) Navigator.of(context).pop(dateTime);
               setState1(() {});
             };
             return Container(
@@ -259,9 +275,9 @@ class AnalogClock extends StatefulWidget {
                           clockType = ClockType.Seconds;
                           setState1(() {});
                         },
-                        timeOfDay.minute < 10
-                            ? '0${timeOfDay.minute}'
-                            : '${timeOfDay.minute}',
+                        dateTime.second < 10
+                            ? '0${dateTime.second}'
+                            : '${dateTime.second}',
                         clockType == ClockType.Seconds,
                         MediaQuery.of(context).size,
                         amountSections,
@@ -286,6 +302,10 @@ class AnalogClock extends StatefulWidget {
                                 child: TextButton(
                                   onPressed: () {
                                     amPmPick = true;
+                                    changeHour(
+                                      timeOfDay.hourOfPeriod,
+                                      applyHour: false,
+                                    );
                                     setState1(() {});
                                   },
                                   child: Text(
@@ -308,6 +328,10 @@ class AnalogClock extends StatefulWidget {
                                   style: ButtonStyle(),
                                   onPressed: () {
                                     amPmPick = false;
+                                    changeHour(
+                                      timeOfDay.hourOfPeriod,
+                                      applyHour: false,
+                                    );
                                     setState1(() {});
                                   },
                                   child: Text(
@@ -336,7 +360,9 @@ class AnalogClock extends StatefulWidget {
                     clockType: clockType,
                     changeHour: changeHour,
                     changeMinute: changeMinute,
+                    changeSecond: changeSecond,
                     timeOfDay: timeOfDay,
+                    dateTime: dateTime,
                   ),
                   Align(
                     alignment: Alignment.bottomRight,
@@ -349,7 +375,7 @@ class AnalogClock extends StatefulWidget {
                           width: 10,
                         ),
                         TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
+                          onPressed: () => Navigator.of(context).pop(dateTime),
                           child: Text(
                             "OK",
                             style: TextStyle(
@@ -358,7 +384,7 @@ class AnalogClock extends StatefulWidget {
                           ),
                         ),
                         TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
+                          onPressed: () => Navigator.of(context).pop(null),
                           child: Text(
                             "CANCEL",
                             style: TextStyle(
@@ -376,7 +402,6 @@ class AnalogClock extends StatefulWidget {
         ),
       ),
     );
-    return dateTime;
   }
 
   static double buildRadius(double height, double width) => min(width, height);
@@ -388,45 +413,176 @@ class AnalogClock extends StatefulWidget {
       : hour == 12
           ? hour
           : hour + 12;
-  // hour == 12 ? 0 : hour + (amPmPick ? 0 : 12);
 }
 
 class _AnalogClockState extends State<AnalogClock> {
+  double radius;
+
+  @override
+  void initState() {
+    super.initState();
+    radius = widget.width / 2;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: widget.width * 1.2,
-      height: widget.height * 1.2,
-      child: Stack(
-        children: [
-          Positioned(
-            child: CustomPaint(
-              size: Size(
-                widget.width * 1.2,
-                widget.height * 1.2,
-              ),
-              painter: StrokePainter(
-                containerSize: Size(
+    int chosenMinute = widget.dateTime.minute;
+    int chosenHour = widget.timeOfDay.hourOfPeriod;
+    int chosenSecond = widget.dateTime.second;
+    return GestureDetector(
+      onHorizontalDragStart: (details) {
+        switch (widget.clockType) {
+          case ClockType.Hours24:
+            // TODO: Handle this case.
+            break;
+          case ClockType.Hours12:
+            Offset currentPosition = details.localPosition.translate(-10, -10);
+            chosenHour = findClosest12Hour(radius, currentPosition);
+            if (chosenHour != widget.timeOfDay.hourOfPeriod)
+              widget.changeHour(chosenHour, applyHour: false);
+            break;
+          case ClockType.Minutes:
+            Offset currentPosition = details.localPosition.translate(-10, -10);
+            chosenMinute = findClosestMinute(radius, currentPosition);
+            if (chosenMinute != widget.timeOfDay.minute)
+              widget.changeMinute(chosenMinute, applyMinute: false);
+            break;
+          case ClockType.Seconds:
+            Offset currentPosition = details.localPosition.translate(-10, -10);
+            chosenSecond = findClosestSecond(radius, currentPosition);
+            if (chosenSecond != widget.dateTime.second)
+              widget.changeSecond(chosenSecond);
+            break;
+        }
+      },
+      onHorizontalDragUpdate: (details) {
+        switch (widget.clockType) {
+          case ClockType.Hours12:
+            Offset currentPosition = details.localPosition.translate(-10, -10);
+            chosenHour = findClosest12Hour(radius, currentPosition);
+            if (chosenHour != widget.timeOfDay.hourOfPeriod)
+              widget.changeHour(chosenHour, applyHour: false);
+            break;
+          case ClockType.Hours24:
+            // TODO: Handle this case.
+            break;
+          case ClockType.Minutes:
+            Offset currentPosition = details.localPosition.translate(-10, -10);
+            chosenMinute = findClosestMinute(radius, currentPosition);
+            if (chosenMinute != widget.timeOfDay.minute)
+              widget.changeMinute(chosenMinute, applyMinute: false);
+            break;
+          case ClockType.Seconds:
+            Offset currentPosition = details.localPosition.translate(-10, -10);
+            chosenSecond = findClosestSecond(radius, currentPosition);
+            if (chosenSecond != widget.dateTime.second)
+              widget.changeSecond(chosenSecond);
+            break;
+        }
+      },
+      onHorizontalDragEnd: (details) {
+        switch (widget.clockType) {
+          case ClockType.Hours24:
+            // TODO: Handle this case.
+            break;
+          case ClockType.Hours12:
+            widget.changeHour(chosenHour);
+            break;
+          case ClockType.Minutes:
+            widget.changeMinute(chosenMinute);
+            break;
+          case ClockType.Seconds:
+            widget.changeSecond(chosenSecond);
+            break;
+        }
+      },
+      child: Container(
+        width: widget.width * 1.2,
+        height: widget.height * 1.2,
+        child: Stack(
+          children: [
+            Positioned(
+              child: CustomPaint(
+                size: Size(
                   widget.width * 1.2,
                   widget.height * 1.2,
                 ),
-                clockType: widget.clockType,
-                timeOfDay: widget.timeOfDay,
+                painter: StrokePainter(
+                  containerSize: Size(
+                    widget.width * 1.2,
+                    widget.height * 1.2,
+                  ),
+                  clockType: widget.clockType,
+                  timeOfDay: widget.timeOfDay,
+                  dateTime: widget.dateTime,
+                ),
               ),
             ),
-          ),
-          ClockNumbers(
-            diameter: widget.width,
-            clockType: widget.clockType,
-            change: widget.clockType == ClockType.Hours12
-                ? widget.changeHour
-                : widget.changeMinute,
-            changeMinute: widget.changeMinute,
-            timeOfDay: widget.timeOfDay,
-          ),
-        ],
+            ClockNumbers(
+              diameter: widget.width,
+              clockType: widget.clockType,
+              changeHour: widget.changeHour,
+              changeMinute: widget.changeMinute,
+              changeSecond: widget.changeSecond,
+              timeOfDay: widget.timeOfDay,
+              dateTime: widget.dateTime,
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  /// Distance between two points.
+  double distance(Offset point1, Offset point2) =>
+      sqrt(pow((point1.dx - point2.dx), 2) + pow((point1.dy - point2.dy), 2));
+
+  int findClosest12Hour(double radius, Offset currentPosition) {
+    int hour = widget.timeOfDay.hourOfPeriod;
+    Offset desiredHour = Offset(radius + sin((pi / 30) * hour) * radius,
+        radius - cos((pi / 30) * hour) * radius);
+    for (int i = 5; i <= 60; i = i + 5) {
+      Offset hourPosition = Offset(radius + sin((pi / 30) * i) * radius,
+          radius - cos((pi / 30) * i) * radius);
+      if (distance(desiredHour, currentPosition) >
+          distance(hourPosition, currentPosition)) {
+        desiredHour = hourPosition;
+        hour = i ~/ 5;
+      }
+    }
+    return hour;
+  }
+
+  int findClosestMinute(double radius, Offset currentPosition) {
+    int minute = widget.timeOfDay.minute;
+    Offset desiredMinute = Offset(radius + sin((pi / 30) * minute) * radius,
+        radius - cos((pi / 30) * minute) * radius);
+    for (int i = 1; i <= 60; i++) {
+      Offset minutePosition = Offset(radius + sin((pi / 30) * i) * radius,
+          radius - cos((pi / 30) * i) * radius);
+      if (distance(desiredMinute, currentPosition) >
+          distance(minutePosition, currentPosition)) {
+        desiredMinute = minutePosition;
+        minute = i;
+      }
+    }
+    return minute;
+  }
+
+  int findClosestSecond(double radius, Offset currentPosition) {
+    int second = widget.dateTime.second;
+    Offset desiredSecond = Offset(radius + sin((pi / 30) * second) * radius,
+        radius - cos((pi / 30) * second) * radius);
+    for (int i = 1; i <= 60; i++) {
+      Offset secondPosition = Offset(radius + sin((pi / 30) * i) * radius,
+          radius - cos((pi / 30) * i) * radius);
+      if (distance(desiredSecond, currentPosition) >
+          distance(secondPosition, currentPosition)) {
+        desiredSecond = secondPosition;
+        second = i;
+      }
+    }
+    return second;
   }
 }
 
@@ -434,12 +590,14 @@ class StrokePainter extends CustomPainter {
   final Size containerSize;
   final ClockType clockType;
   final TimeOfDay timeOfDay;
+  final DateTime dateTime;
 
   StrokePainter({
     Key key,
     this.clockType,
     this.timeOfDay,
     this.containerSize,
+    this.dateTime,
   });
 
   @override
@@ -465,7 +623,7 @@ class StrokePainter extends CustomPainter {
       ),
       lastPoint(diameter),
       Paint()
-        ..color = Colors.blueAccent
+        ..color = Colors.blueAccent.withOpacity(0.65)
         ..strokeWidth = 3,
     );
   }
@@ -490,7 +648,9 @@ class StrokePainter extends CustomPainter {
         height = radius - cos((pi / 30) * minute) * radius;
         break;
       case ClockType.Seconds:
-        // TODO: Handle this case.
+        int second = dateTime.second;
+        width = radius + sin((pi / 30) * second) * radius;
+        height = radius - cos((pi / 30) * second) * radius;
         break;
     }
     return Offset(width, height);
@@ -512,22 +672,22 @@ enum ClockType {
 
 class ClockNumbers extends StatefulWidget {
   final double diameter;
-
   final ClockType clockType;
-
-  final Function change;
-
+  final Function changeHour;
   final Function changeMinute;
-
+  final Function changeSecond;
   final TimeOfDay timeOfDay;
+  final DateTime dateTime;
 
   ClockNumbers({
     Key key,
     this.diameter,
-    this.clockType = ClockType.Hours12,
-    this.change,
+    this.clockType,
+    this.changeHour,
     this.changeMinute,
+    this.changeSecond,
     this.timeOfDay,
+    this.dateTime,
   }) : super(key: key);
 
   @override
@@ -537,12 +697,10 @@ class ClockNumbers extends StatefulWidget {
 class _ClockNumbersState extends State<ClockNumbers> {
   final double shrinkCircleRadius = 22;
   final double circleRadius = 33;
-  double circleCenter;
   int chosenNumber = 12;
 
   @override
   initState() {
-    circleCenter = circleRadius / 2;
     super.initState();
   }
 
@@ -565,7 +723,9 @@ class _ClockNumbersState extends State<ClockNumbers> {
         numbers = buildMinutesNumbers();
         break;
       case ClockType.Seconds:
-        // TODO: Handle this case.
+        chosenNumber = widget.dateTime.second;
+        chosenNumber = chosenNumber == 0 ? 60 : chosenNumber;
+        numbers = buildSecondsNumbers();
         break;
     }
     return Stack(
@@ -578,18 +738,24 @@ class _ClockNumbersState extends State<ClockNumbers> {
     bool isSmall = number % 5 != 0 &&
         (clockType == ClockType.Minutes || clockType == ClockType.Seconds);
     var blueAccent =
-        isSmall ? Colors.blueAccent.withOpacity(0.65) : Colors.blueAccent;
+        isSmall ? Colors.blueAccent.withOpacity(0.75) : Colors.blueAccent;
     return RawMaterialButton(
       onPressed: () {
         chosenNumber = number;
         setState(() {});
         onChange(number);
       },
-      elevation: 0,
+      elevation: 5,
       fillColor: number == chosenNumber ? blueAccent : null,
-      highlightColor: Colors.blueAccent[100],
-      focusColor: Colors.blueAccent[50],
-      child: isSmall ? null : numberText(number, clockType),
+      highlightColor: Colors.blueAccent.withOpacity(0.5),
+      focusColor: Colors.blueAccent.withOpacity(0.5),
+      hoverColor: Colors.blueAccent.withOpacity(0.5),
+      hoverElevation: 20,
+      focusElevation: 20,
+      highlightElevation: 20,
+      child: isSmall && chosenNumber != number
+          ? null
+          : numberText(number, clockType),
       shape: CircleBorder(),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       constraints: BoxConstraints(
@@ -599,7 +765,10 @@ class _ClockNumbersState extends State<ClockNumbers> {
   }
 
   Text numberText(int number, ClockType clockType) {
-    String text = number.toString();
+    String text = number == 5 &&
+            (clockType == ClockType.Minutes || clockType == ClockType.Seconds)
+        ? '05'
+        : number.toString();
     if (clockType == ClockType.Minutes || clockType == ClockType.Seconds)
       text = number % 5 == 0 ? text : '·';
     return Text(
@@ -609,7 +778,7 @@ class _ClockNumbersState extends State<ClockNumbers> {
         fontSize: number % 5 != 0 &&
                 (clockType == ClockType.Minutes ||
                     clockType == ClockType.Seconds)
-            ? 15
+            ? 25
             : 14,
         fontWeight: number % 5 != 0 &&
                 (clockType == ClockType.Minutes ||
@@ -633,7 +802,7 @@ class _ClockNumbersState extends State<ClockNumbers> {
             height: positionedHeight,
             child: numberButton(
               i ~/ 5,
-              widget.change,
+              widget.changeHour,
               ClockType.Hours12,
             )),
       );
@@ -652,7 +821,25 @@ class _ClockNumbersState extends State<ClockNumbers> {
           top: (radius - cos((pi / 30) * i) * radius),
           width: positionedWidth,
           height: positionedHeight,
-          child: numberButton(i, widget.change, ClockType.Minutes),
+          child: numberButton(i, widget.changeMinute, ClockType.Minutes),
+        ),
+      );
+    }
+    return numbers;
+  }
+
+  List<Widget> buildSecondsNumbers() {
+    List<Widget> numbers = [];
+    double radius = widget.diameter / 2;
+    double positionedWidth = 30, positionedHeight = 30;
+    for (int i = 1; i <= 60; i++) {
+      numbers.add(
+        Positioned(
+          left: radius + sin((pi / 30) * i) * radius,
+          top: (radius - cos((pi / 30) * i) * radius),
+          width: positionedWidth,
+          height: positionedHeight,
+          child: numberButton(i, widget.changeSecond, ClockType.Minutes),
         ),
       );
     }
