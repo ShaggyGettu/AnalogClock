@@ -138,8 +138,12 @@ class AnalogClock extends StatefulWidget {
         child: StatefulBuilder(
           builder: (context3, setState1) {
             Function changeHour = (int hour, {bool applyHour = true}) {
-              timeOfDay =
-                  timeOfDay.replacing(hour: getRealHour(hour, amPmPick));
+              timeOfDay = timeOfDay.replacing(
+                  hour: clockType == ClockType.Hours12
+                      ? getRealHour(hour, amPmPick)
+                      : hour == 24
+                          ? 0
+                          : hour);
               if (applyHour)
                 clockType = (hour12Minute ||
                         hour12MinuteSecond ||
@@ -224,10 +228,11 @@ class AnalogClock extends StatefulWidget {
                                   : ClockType.Hours24;
                           setState1(() {});
                         },
-                        timeOfDay.hourOfPeriod < 10 &&
-                                timeOfDay.hourOfPeriod != 0
-                            ? '0${timeOfDay.hourOfPeriod}'
-                            : '${timeOfDay.hourOfPeriod == 0 ? 12 : timeOfDay.hourOfPeriod}',
+                        writeHour(
+                            timeOfDay,
+                            hour12 || hour12Minute || hour12MinuteSecond
+                                ? ClockType.Hours12
+                                : ClockType.Hours24),
                         clockType == ClockType.Hours12 ||
                             clockType == ClockType.Hours24,
                         MediaQuery.of(context).size,
@@ -404,6 +409,16 @@ class AnalogClock extends StatefulWidget {
     );
   }
 
+  static String writeHour(TimeOfDay timeOfDay, ClockType clockType) {
+    if (clockType == ClockType.Hours12)
+      return timeOfDay.hourOfPeriod < 10 && timeOfDay.hourOfPeriod != 0
+          ? '0${timeOfDay.hourOfPeriod}'
+          : '${timeOfDay.hourOfPeriod == 0 ? 12 : timeOfDay.hourOfPeriod}';
+    return timeOfDay.hour < 10 && timeOfDay.hour != 0
+        ? '0${timeOfDay.hour}'
+        : '${timeOfDay.hour == 0 ? 24 : timeOfDay.hour}';
+  }
+
   static double buildRadius(double height, double width) => min(width, height);
 
   static int getRealHour(int hour, bool amPmPick) => amPmPick
@@ -433,7 +448,10 @@ class _AnalogClockState extends State<AnalogClock> {
       onHorizontalDragStart: (details) {
         switch (widget.clockType) {
           case ClockType.Hours24:
-            // TODO: Handle this case.
+            Offset currentPosition = details.localPosition.translate(-10, -10);
+            chosenHour = findClosest24Hour(radius, currentPosition);
+            if (chosenHour != widget.timeOfDay.hourOfPeriod)
+              widget.changeHour(chosenHour, applyHour: false);
             break;
           case ClockType.Hours12:
             Offset currentPosition = details.localPosition.translate(-10, -10);
@@ -464,7 +482,10 @@ class _AnalogClockState extends State<AnalogClock> {
               widget.changeHour(chosenHour, applyHour: false);
             break;
           case ClockType.Hours24:
-            // TODO: Handle this case.
+            Offset currentPosition = details.localPosition.translate(-10, -10);
+            chosenHour = findClosest24Hour(radius, currentPosition);
+            if (chosenHour != widget.timeOfDay.hourOfPeriod)
+              widget.changeHour(chosenHour, applyHour: false);
             break;
           case ClockType.Minutes:
             Offset currentPosition = details.localPosition.translate(-10, -10);
@@ -483,7 +504,7 @@ class _AnalogClockState extends State<AnalogClock> {
       onHorizontalDragEnd: (details) {
         switch (widget.clockType) {
           case ClockType.Hours24:
-            // TODO: Handle this case.
+            widget.changeHour(chosenHour);
             break;
           case ClockType.Hours12:
             widget.changeHour(chosenHour);
@@ -584,6 +605,35 @@ class _AnalogClockState extends State<AnalogClock> {
     }
     return second;
   }
+
+  int findClosest24Hour(double radius, Offset currentPosition) {
+    int hour = widget.timeOfDay.hour;
+    double radius2 = radius * 0.65;
+
+    Offset desiredHour = Offset(
+        radius * 0.35 + radius2 + sin((pi / 30) * hour) * radius2,
+        radius2 * 0.35 + radius2 - cos((pi / 30) * hour) * radius2);
+    for (int i = 5; i <= 60; i = i + 5) {
+      Offset hourPosition = Offset(
+          radius2 * 0.35 + radius + sin((pi / 30) * i) * radius2,
+          radius2 * 0.35 + radius - cos((pi / 30) * i) * radius2);
+      if (distance(desiredHour, currentPosition) >
+          distance(hourPosition, currentPosition)) {
+        desiredHour = hourPosition;
+        hour = i ~/ 5 + 12;
+      }
+
+      hourPosition = Offset(radius + sin((pi / 30) * i) * radius,
+          radius - cos((pi / 30) * i) * radius);
+      if (distance(desiredHour, currentPosition) >
+          distance(hourPosition, currentPosition)) {
+        desiredHour = hourPosition;
+        hour = i ~/ 5;
+      }
+    }
+
+    return hour;
+  }
 }
 
 class StrokePainter extends CustomPainter {
@@ -632,12 +682,21 @@ class StrokePainter extends CustomPainter {
     double width = 0;
     double height = 0;
     double radius = diameter / 2;
-    int hour = timeOfDay.hourOfPeriod;
     switch (clockType) {
       case ClockType.Hours24:
-        // TODO: Handle this case.
+        double radius2 = radius * 0.65;
+        int hour = timeOfDay.hour == 0 ? 24 : timeOfDay.hour;
+        if (hour < 13) {
+          width = width = radius + sin((pi / 30) * hour * 5) * radius;
+          height = radius - cos((pi / 30) * hour * 5) * radius;
+        } else {
+          width = radius * 0.35 + radius2 + sin((pi / 30) * hour * 5) * radius2;
+          height =
+              radius * 0.35 + radius2 - cos((pi / 30) * hour * 5) * radius2;
+        }
         break;
       case ClockType.Hours12:
+        int hour = timeOfDay.hourOfPeriod;
         width = radius + sin((pi / 30) * hour * 5) * radius;
         height = radius - cos((pi / 30) * hour * 5) * radius;
 
@@ -709,7 +768,8 @@ class _ClockNumbersState extends State<ClockNumbers> {
     List<Widget> numbers = [];
     switch (widget.clockType) {
       case ClockType.Hours24:
-        // TODO: Handle this case.
+        chosenNumber = widget.timeOfDay.hour == 0 ? 24 : widget.timeOfDay.hour;
+        numbers = build24HoursNumbers();
         break;
       case ClockType.Hours12:
         chosenNumber = widget.timeOfDay.hourOfPeriod == 0
@@ -796,15 +856,16 @@ class _ClockNumbersState extends State<ClockNumbers> {
     for (int i = 5; i <= 60; i = i + 5) {
       numbers.add(
         Positioned(
-            left: radius + sin((pi / 30) * i) * radius,
-            top: radius - cos((pi / 30) * i) * radius,
-            width: positionedWidth,
-            height: positionedHeight,
-            child: numberButton(
-              i ~/ 5,
-              widget.changeHour,
-              ClockType.Hours12,
-            )),
+          left: radius + sin((pi / 30) * i) * radius,
+          top: radius - cos((pi / 30) * i) * radius,
+          width: positionedWidth,
+          height: positionedHeight,
+          child: numberButton(
+            i ~/ 5,
+            widget.changeHour,
+            ClockType.Hours12,
+          ),
+        ),
       );
     }
     return numbers;
@@ -840,6 +901,42 @@ class _ClockNumbersState extends State<ClockNumbers> {
           width: positionedWidth,
           height: positionedHeight,
           child: numberButton(i, widget.changeSecond, ClockType.Minutes),
+        ),
+      );
+    }
+    return numbers;
+  }
+
+  List<Widget> build24HoursNumbers() {
+    List<Widget> numbers = [];
+    double radius1 = widget.diameter / 2;
+    double radius2 = radius1 * 0.65;
+    double positionedWidth = 30, positionedHeight = 30;
+    for (int i = 5; i <= 60; i = i + 5) {
+      numbers.add(
+        Positioned(
+          left: radius1 + sin((pi / 30) * i) * radius1,
+          top: radius1 - cos((pi / 30) * i) * radius1,
+          width: positionedWidth,
+          height: positionedHeight,
+          child: numberButton(
+            i ~/ 5,
+            widget.changeHour,
+            ClockType.Hours12,
+          ),
+        ),
+      );
+      numbers.add(
+        Positioned(
+          left: radius1 * 0.35 + radius2 + sin((pi / 30) * i) * radius2,
+          top: radius1 * 0.35 + (radius2 - cos((pi / 30) * i) * radius2),
+          width: positionedWidth,
+          height: positionedHeight,
+          child: numberButton(
+            i ~/ 5 + 12,
+            widget.changeHour,
+            ClockType.Hours24,
+          ),
         ),
       );
     }
