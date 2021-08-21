@@ -150,7 +150,7 @@ class AnalogClock extends StatefulWidget {
                         hour24Minute ||
                         hour24MinuteSecond)
                     ? ClockType.Minutes
-                    : null;
+                    : clockType;
               dateTime = DateTime(
                 dateTime.year,
                 dateTime.month,
@@ -159,9 +159,6 @@ class AnalogClock extends StatefulWidget {
                 dateTime.minute,
                 dateTime.second,
               );
-              if (clockType == null) {
-                Navigator.of(context).pop(dateTime);
-              }
               setState1(() {});
             };
 
@@ -172,7 +169,7 @@ class AnalogClock extends StatefulWidget {
                 clockType =
                     (hour12MinuteSecond || hour24MinuteSecond || minuteSecond)
                         ? ClockType.Seconds
-                        : null;
+                        : clockType;
               dateTime = DateTime(
                 dateTime.year,
                 dateTime.month,
@@ -181,9 +178,7 @@ class AnalogClock extends StatefulWidget {
                 timeOfDay.minute,
                 dateTime.second,
               );
-              if (clockType == null) {
-                Navigator.of(context).pop(dateTime);
-              }
+
               setState1(() {});
             };
             Function changeSecond = (int second) {
@@ -196,7 +191,6 @@ class AnalogClock extends StatefulWidget {
                 dateTime.minute,
                 second,
               );
-              if (clockType == null) Navigator.of(context).pop(dateTime);
               setState1(() {});
             };
             return Container(
@@ -450,7 +444,7 @@ class _AnalogClockState extends State<AnalogClock> {
           case ClockType.Hours24:
             Offset currentPosition = details.localPosition.translate(-10, -10);
             chosenHour = findClosest24Hour(radius, currentPosition);
-            if (chosenHour != widget.timeOfDay.hourOfPeriod)
+            if (chosenHour != widget.timeOfDay.hour)
               widget.changeHour(chosenHour, applyHour: false);
             break;
           case ClockType.Hours12:
@@ -484,7 +478,7 @@ class _AnalogClockState extends State<AnalogClock> {
           case ClockType.Hours24:
             Offset currentPosition = details.localPosition.translate(-10, -10);
             chosenHour = findClosest24Hour(radius, currentPosition);
-            if (chosenHour != widget.timeOfDay.hourOfPeriod)
+            if (chosenHour != widget.timeOfDay.hour)
               widget.changeHour(chosenHour, applyHour: false);
             break;
           case ClockType.Minutes:
@@ -631,7 +625,6 @@ class _AnalogClockState extends State<AnalogClock> {
         hour = i ~/ 5;
       }
     }
-
     return hour;
   }
 }

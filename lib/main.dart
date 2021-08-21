@@ -1,5 +1,6 @@
 import 'package:analog_clock_widget/AnalogClock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 void main() {
   runApp(MyApp());
@@ -29,14 +30,20 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
+  DateTime dateTime;
+
+  void initState() {
+    super.initState();
+    dateTime = DateTime.now();
+  }
+
   Future<void> _incrementCounter() async {
-    DateTime dateTime;
     print(MediaQuery.of(context).size);
 
     dateTime = await AnalogClock.showAnalogClock(
       context: context,
       dateTime: DateTime.now().subtract(Duration(days: 3)),
-      hour12MinuteSecond: true,
+      hour24MinuteSecond: true,
       screenWidth: 1,
       screenHeight: 1,
     );
@@ -50,6 +57,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    String hour = dateTime.hour < 10 ? '0${dateTime.hour}' : '${dateTime.hour}';
+    String minute =
+        dateTime.minute < 10 ? '0${dateTime.minute}' : '${dateTime.minute}';
+    String second =
+        dateTime.second < 10 ? '0${dateTime.second}' : '${dateTime.second}';
     print(MediaQuery.of(context).size);
 
     return Scaffold(
@@ -61,20 +73,199 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
+              '$hour:$minute:$second',
+              style: TextStyle(
+                fontSize: 24,
+              ),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
+      floatingActionButton: SpeedDial(
+        renderOverlay: false,
+        // overlayOpacity: 0,
+        children: _timePickerOptions(),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+        icon: Icons.access_time,
+        activeIcon: Icons.close,
       ),
     );
+  }
+
+  List<SpeedDialChild> _timePickerOptions() {
+    return [
+      SpeedDialChild(
+        child: Center(
+          child: Text(
+            'hour12MinuteSecond',
+            style: TextStyle(
+              fontSize: 8,
+              color: Colors.blue,
+            ),
+          ),
+        ),
+        onTap: () async {
+          dateTime = await AnalogClock.showAnalogClock(
+            context: context,
+            dateTime: dateTime,
+            hour12MinuteSecond: true,
+          );
+          setState(() {});
+        },
+      ),
+      SpeedDialChild(
+        child: Center(
+          child: Text(
+            'hour12Minute',
+            style: TextStyle(
+              fontSize: 8,
+              color: Colors.blue,
+            ),
+          ),
+        ),
+        onTap: () async {
+          dateTime = await AnalogClock.showAnalogClock(
+            context: context,
+            dateTime: dateTime,
+            hour12Minute: true,
+          );
+          setState(() {});
+        },
+      ),
+      SpeedDialChild(
+        child: Center(
+          child: Text(
+            'hour12',
+            style: TextStyle(
+              fontSize: 8,
+              color: Colors.blue,
+            ),
+          ),
+        ),
+        onTap: () async {
+          dateTime = await AnalogClock.showAnalogClock(
+            context: context,
+            dateTime: dateTime,
+            hour12: true,
+          );
+          setState(() {});
+        },
+      ),
+      SpeedDialChild(
+        child: Center(
+          child: Text(
+            'hour24MinuteSecond',
+            style: TextStyle(
+              fontSize: 8,
+              color: Colors.blue,
+            ),
+          ),
+        ),
+        onTap: () async {
+          dateTime = await AnalogClock.showAnalogClock(
+            context: context,
+            dateTime: dateTime,
+            hour24MinuteSecond: true,
+          );
+          setState(() {});
+        },
+      ),
+      SpeedDialChild(
+        child: Center(
+          child: Text(
+            'hour24Minute',
+            style: TextStyle(
+              fontSize: 8,
+              color: Colors.blue,
+            ),
+          ),
+        ),
+        onTap: () async {
+          dateTime = await AnalogClock.showAnalogClock(
+            context: context,
+            dateTime: dateTime,
+            hour24Minute: true,
+          );
+          setState(() {});
+        },
+      ),
+      SpeedDialChild(
+        child: Center(
+          child: Text(
+            'hour24',
+            style: TextStyle(
+              fontSize: 8,
+              color: Colors.blue,
+            ),
+          ),
+        ),
+        onTap: () async {
+          dateTime = await AnalogClock.showAnalogClock(
+            context: context,
+            dateTime: dateTime,
+            hour24: true,
+          );
+          setState(() {});
+        },
+      ),
+      SpeedDialChild(
+        child: Center(
+          child: Text(
+            'minuteSecond',
+            style: TextStyle(
+              fontSize: 8,
+              color: Colors.blue,
+            ),
+          ),
+        ),
+        onTap: () async {
+          dateTime = await AnalogClock.showAnalogClock(
+            context: context,
+            dateTime: dateTime,
+            minuteSecond: true,
+          );
+          setState(() {});
+        },
+      ),
+      SpeedDialChild(
+        child: Center(
+          child: Text(
+            'minute',
+            style: TextStyle(
+              fontSize: 8,
+              color: Colors.blue,
+            ),
+          ),
+        ),
+        onTap: () async {
+          dateTime = await AnalogClock.showAnalogClock(
+            context: context,
+            dateTime: dateTime,
+            minute: true,
+          );
+          setState(() {});
+        },
+      ),
+      SpeedDialChild(
+        child: Center(
+          child: Text(
+            'second',
+            style: TextStyle(
+              fontSize: 8,
+              color: Colors.blue,
+            ),
+          ),
+        ),
+        onTap: () async {
+          dateTime = await AnalogClock.showAnalogClock(
+            context: context,
+            dateTime: dateTime,
+            second: true,
+          );
+          setState(() {});
+        },
+      ),
+    ];
   }
 }
