@@ -106,11 +106,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         onTap: () async {
-          dateTime = await AnalogClock.showAnalogClock(
+          DateTime dateTime1 = await AnalogClock.showAnalogClock(
             context: context,
             dateTime: dateTime,
             hour12MinuteSecond: true,
           );
+          dateTime = dateTime1 ?? dateTime;
           setState(() {});
         },
       ),
@@ -125,11 +126,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         onTap: () async {
-          dateTime = await AnalogClock.showAnalogClock(
+          DateTime dateTime1 = await AnalogClock.showAnalogClock(
             context: context,
             dateTime: dateTime,
             hour12Minute: true,
           );
+          dateTime = dateTime1 ?? dateTime;
           setState(() {});
         },
       ),
@@ -144,11 +146,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         onTap: () async {
-          dateTime = await AnalogClock.showAnalogClock(
+          DateTime dateTime1 = await AnalogClock.showAnalogClock(
             context: context,
             dateTime: dateTime,
             hour12: true,
           );
+          dateTime = dateTime1 ?? dateTime;
           setState(() {});
         },
       ),
@@ -163,11 +166,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         onTap: () async {
-          dateTime = await AnalogClock.showAnalogClock(
+          DateTime dateTime1 = await AnalogClock.showAnalogClock(
             context: context,
             dateTime: dateTime,
             hour24MinuteSecond: true,
           );
+          dateTime = dateTime1 ?? dateTime;
           setState(() {});
         },
       ),
@@ -182,11 +186,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         onTap: () async {
-          dateTime = await AnalogClock.showAnalogClock(
+          DateTime dateTime1 = await AnalogClock.showAnalogClock(
             context: context,
             dateTime: dateTime,
             hour24Minute: true,
           );
+          dateTime = dateTime1 ?? dateTime;
           setState(() {});
         },
       ),
@@ -201,11 +206,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         onTap: () async {
-          dateTime = await AnalogClock.showAnalogClock(
+          DateTime dateTime1 = await AnalogClock.showAnalogClock(
             context: context,
             dateTime: dateTime,
             hour24: true,
           );
+          dateTime = dateTime1 ?? dateTime;
           setState(() {});
         },
       ),
@@ -220,11 +226,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         onTap: () async {
-          dateTime = await AnalogClock.showAnalogClock(
+          DateTime dateTime1 = await AnalogClock.showAnalogClock(
             context: context,
             dateTime: dateTime,
             minuteSecond: true,
           );
+          dateTime = dateTime1 ?? dateTime;
           setState(() {});
         },
       ),
@@ -239,11 +246,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         onTap: () async {
-          dateTime = await AnalogClock.showAnalogClock(
+          DateTime dateTime1 = await AnalogClock.showAnalogClock(
             context: context,
             dateTime: dateTime,
             minute: true,
           );
+          dateTime = dateTime1 ?? dateTime;
           setState(() {});
         },
       ),
@@ -258,11 +266,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         onTap: () async {
-          dateTime = await AnalogClock.showAnalogClock(
+          DateTime dateTime1 = await AnalogClock.showAnalogClock(
             context: context,
             dateTime: dateTime,
             second: true,
           );
+          dateTime = dateTime1 ?? dateTime;
           setState(() {});
         },
       ),
