@@ -1,6 +1,8 @@
 # AnalogClock
  Analog clock widget for flutter
  
+  time picker dialog for chossing hour, minute and second.
+ 
  # 12 Hour mode with minutes and second picker:
  
  ```dart
